@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+:root{--bg:#0a0505;--bg2:#110808;--bg3:#1a0a0a;--accent:#ff1a1a;--accent2:#cc0000;--accent3:#ff1a1a44;--accent4:#ff1a1a18;--text:#ffcccc;--text-dim:#aa6666;--border:#ff1a1a33;--border2:#ff1a1a66;--r:10px;--font:'Rajdhani',sans-serif;--mono:'Share Tech Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);overflow-y:auto}
+body{padding:20px}
+h1{font-size:22px;font-weight:700;letter-spacing:2px;color:var(--accent);margin-bottom:4px}
+.subtitle{font-size:13px;color:var(--text-dim);margin-bottom:20px}
+.section{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;margin-bottom:14px}
+.section-title{font-size:14px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent2);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)}
+.row:last-child{border-bottom:none}
+.row label{font-size:14px;color:var(--text);font-weight:600}
+.row .desc{font-size:11px;color:var(--text-dim);margin-top:2px}
+.row-left{flex:1}
+/* Toggle */
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{
+  position:absolute;inset:0;background:#330000;border-radius:12px;
+  cursor:pointer;transition:.2s;border:1px solid var(--border2);
+}
+.toggle-slider::before{
+  content:'';position:absolute;left:3px;top:3px;
+  width:16px;height:16px;background:#666;border-radius:50%;
+  transition:.2s;
+}
+.toggle input:checked + .toggle-slider{background:var(--accent2)}
+.toggle input:checked + .toggle-slider::before{transform:translateX(20px);background:#fff}
+/* Select */
+select{
+  background:var(--bg3);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);padding:6px 10px;font-family:var(--font);font-size:13px;outline:none;cursor:pointer;
+}
+select:focus{border-color:var(--accent)}
+/* Btn */
+.btn{
+  padding:7px 16px;border-radius:8px;border:1px solid var(--border);
+  font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;
+  transition:all .15s;letter-spacing:.5px;background:var(--bg3);color:var(--text);
+}
+.btn:hover{border-color:var(--accent2);color:var(--accent)}
+.btn.primary{background:var(--accent2);color:#fff;border-color:var(--accent)}
+.btn.primary:hover{background:var(--accent)}
+.btn.danger{color:#ff6666;border-color:#ff666633}
+.btn.danger:hover{background:#ff000018;border-color:#ff6666}
+/* Icon preview */
+.icon-preview{
+  width:52px;height:52px;border-radius:12px;border:1px solid var(--border2);
+  background:var(--bg3);display:flex;align-items:center;justify-content:center;
+  font-size:28px;cursor:pointer;transition:all .15s;
+}
+.icon-preview:hover{border-color:var(--accent2);background:var(--accent4)}
+.icons-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.status{font-size:12px;color:var(--accent2);margin-top:8px;min-height:16px}
+input[type=file]{display:none}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<h1>⚙ Control Center</h1>
+<div class="subtitle">Customize your SoupyDesk experience</div>
+
+<!-- Security -->
+<div class="section">
+  <div class="section-title">🔒 Security</div>
+  <div class="row">
+    <div class="row-left">
+      <div class="row-label" style="font-size:14px;font-weight:600">UAC (User Access Control)</div>
+      <div class="desc">When ON, you'll be prompted before running custom HTML files</div>
+    </div>
+    <label class="toggle">
+      <input type="checkbox" id="uac-toggle" onchange="CC.setUAC(this.checked)">
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+</div>
+
+<!-- Appearance -->
+<div class="section">
+  <div class="section-title">🎨 Appearance</div>
+  <div class="row">
+    <div class="row-left"><div style="font-size:14px;font-weight:600">Wallpaper</div><div class="desc">Custom background image</div></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" onclick="CC.pickWallpaper()">Choose Image</button>
+      <button class="btn danger" onclick="CC.resetWallpaper()">Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- Custom Icons -->
+<div class="section">
+  <div class="section-title">🖼 Custom Icons</div>
+  <div class="row">
+    <div class="row-left"><div style="font-size:14px;font-weight:600">Folder Icon</div></div>
+    <div class="icons-row">
+      <div class="icon-preview" id="icon-folder" onclick="CC.pickIcon('folder')">📁</div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="row-left"><div style="font-size:14px;font-weight:600">HTML File Icon</div></div>
+    <div class="icons-row">
+      <div class="icon-preview" id="icon-html" onclick="CC.pickIcon('html')">🌐</div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="row-left"><div style="font-size:14px;font-weight:600">Error Icon</div></div>
+    <div class="icons-row">
+      <div class="icon-preview" id="icon-error" onclick="CC.pickIcon('error')">⚠️</div>
+    </div>
+  </div>
+  <div class="status" id="icon-status"></div>
+</div>
+
+<!-- Cursor -->
+<div class="section">
+  <div class="section-title">🖱 Cursor</div>
+  <div class="row">
+    <div class="row-left"><div style="font-size:14px;font-weight:600">Cursor Style</div><div class="desc">Applies to the entire desktop</div></div>
+    <select id="cursor-select" onchange="CC.setCursor(this.value)">
+      <option value="default">Default</option>
+      <option value="crosshair">Crosshair</option>
+      <option value="pointer">Pointer</option>
+      <option value="cell">Cell</option>
+      <option value="none">Hidden</option>
+    </select>
+  </div>
+  <div class="row">
+    <div class="row-left"><div style="font-size:14px;font-weight:600">Custom Cursor Image</div></div>
+    <button class="btn" onclick="CC.pickCursor()">Upload .cur / .png</button>
+  </div>
+</div>
+
+<!-- System -->
+<div class="section">
+  <div class="section-title">⚡ System</div>
+  <div class="row">
+    <div class="row-left"><div style="font-size:14px;font-weight:600">Reset Filesystem</div><div class="desc">Restore all system files to defaults. Personal files will be lost.</div></div>
+    <button class="btn danger" onclick="CC.resetFS()">Reset</button>
+  </div>
+  <div class="row">
+    <div class="row-left"><div style="font-size:14px;font-weight:600">Clear Desktop State</div><div class="desc">Reset window positions and UI state</div></div>
+    <button class="btn danger" onclick="CC.clearState()">Clear</button>
+  </div>
+</div>
+
+<div class="status" id="main-status"></div>
+
+<input type="file" id="wallpaper-input" accept="image/*">
+<input type="file" id="cursor-input" accept=".cur,.png,.svg">
+
+<script>
+// ── Settings bridge ────────────────────────────────────────
+let sdCallbacks = {};
+let sdReqId = 0;
+
+function sdGet(key) {
+  return new Promise(resolve => {
+    const id = "sd_" + (++sdReqId);
+    sdCallbacks[id] = resolve;
+    // Can't get reqId back easily, use a simpler approach
+    parent.postMessage({SD:true,action:"getSetting",key,_id:id},"*");
+    setTimeout(()=>resolve(null), 500); // fallback
+  });
+}
+
+window.addEventListener("message", e => {
+  if (!e.data?.SD) return;
+  if (e.data.action === "uacVal") {
+    document.getElementById("uac-toggle").checked = e.data.val !== "0";
+  }
+});
+
+const CC = (() => {
+  function status(msg, el="main-status") {
+    const s = document.getElementById(el);
+    if (s) { s.textContent = msg; setTimeout(()=>s.textContent="",3000); }
+  }
+
+  function setUAC(on) {
+    const val = on ? "1" : "0";
+    parent.postMessage({SD:true,action:"setUAC",val},"*");
+    status(on ? "UAC enabled." : "UAC disabled.");
+  }
+
+  function setCursor(val) {
+    parent.postMessage({SD:true,action:"setSetting",key:"cursor",val},"*");
+    document.body.style.cursor = val;
+    // Tell desktop to update cursor
+    parent.postMessage({SD:true,action:"notify",msg:"Cursor updated."},"*");
+  }
+
+  function pickWallpaper() {
+    const input = document.getElementById("wallpaper-input");
+    input.onchange = () => {
+      const file = input.files[0];
+      if (!file) return;
+      const r = new FileReader();
+      r.onload = e => {
+        parent.postMessage({SD:true,action:"setSetting",key:"wallpaper",val:e.target.result},"*");
+        parent.postMessage({SD:true,action:"notify",msg:"Wallpaper applied!"},"*");
+        status("Wallpaper set!");
+      };
+      r.readAsDataURL(file);
+    };
+    input.click();
+  }
+
+  function resetWallpaper() {
+    parent.postMessage({SD:true,action:"setSetting",key:"wallpaper",val:null},"*");
+    parent.postMessage({SD:true,action:"notify",msg:"Wallpaper reset."},"*");
+    status("Wallpaper reset.");
+  }
+
+  function pickIcon(type) {
+    const input = document.createElement("input");
+    input.type="file"; input.accept="image/*";
+    input.onchange = () => {
+      const file = input.files[0];
+      if (!file) return;
+      const r = new FileReader();
+      r.onload = e => {
+        const val = e.target.result;
+        parent.postMessage({SD:true,action:"setSetting",key:"icon_"+type,val},"*");
+        document.getElementById("icon-"+type).innerHTML = `<img src="${val}" style="width:36px;height:36px;border-radius:8px">`;
+        status("Icon updated!", "icon-status");
+      };
+      r.readAsDataURL(file);
+    };
+    input.click();
+  }
+
+  function pickCursor() {
+    const input = document.getElementById("cursor-input");
+    input.onchange = () => {
+      const file = input.files[0];
+      if (!file) return;
+      const r = new FileReader();
+      r.onload = e => {
+        const val = e.target.result;
+        parent.postMessage({SD:true,action:"setSetting",key:"customCursor",val},"*");
+        parent.postMessage({SD:true,action:"notify",msg:"Custom cursor applied!"},"*");
+      };
+      r.readAsDataURL(file);
+    };
+    input.click();
+  }
+
+  async function resetFS() {
+    if (!confirm("⚠ This will delete ALL files and restore defaults. Are you sure?")) return;
+    await fetch("/api/fs/reset",{method:"POST"});
+    parent.postMessage({SD:true,action:"refreshDesk"},"*");
+    parent.postMessage({SD:true,action:"notify",msg:"Filesystem reset!"},"*");
+    status("Filesystem reset!");
+  }
+
+  function clearState() {
+    localStorage.removeItem("SD_settings");
+    localStorage.removeItem("SD_desktop");
+    parent.postMessage({SD:true,action:"notify",msg:"State cleared. Refresh to apply."},"*");
+    status("State cleared.");
+  }
+
+  function init() {
+    // Load UAC state
+    parent.postMessage({SD:true,action:"getUAC"},"*");
+    // Load cursor
+    const cursor = localStorage.getItem("SD_settings");
+    if (cursor) {
+      try {
+        const s = JSON.parse(cursor);
+        if (s.cursor) document.getElementById("cursor-select").value = s.cursor;
+        if (s.icon_folder && document.getElementById("icon-folder"))
+          document.getElementById("icon-folder").innerHTML = `<img src="${s.icon_folder}" style="width:36px;height:36px;border-radius:8px">`;
+        if (s.icon_html && document.getElementById("icon-html"))
+          document.getElementById("icon-html").innerHTML = `<img src="${s.icon_html}" style="width:36px;height:36px;border-radius:8px">`;
+      } catch(e){}
+    }
+  }
+
+  return {setUAC, setCursor, pickWallpaper, resetWallpaper, pickIcon, pickCursor, resetFS, clearState, init};
+})();
+
+CC.init();
+</script>
+</body>
+</html>
