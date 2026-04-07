@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SoupyDesk</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0505;--bg2:#110808;--bg3:#1a0a0a;
+  --panel:#130808ee;--panel2:#0f0505ee;
+  --border:#ff1a1a44;--border2:#ff1a1a88;
+  --accent:#ff1a1a;--accent2:#cc0000;
+  --accent3:#ff1a1a55;--accent4:#ff1a1a18;
+  --text:#ffcccc;--text-dim:#aa6666;
+  --shadow:#ff1a1a55;
+  --r:12px;--r-sm:8px;--r-lg:16px;
+  --font:'Rajdhani',sans-serif;
+  --mono:'Share Tech Mono',monospace;
+  --dock-h:64px;
+  --titlebar:32px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;
+  background:var(--bg);color:var(--text);
+  font-family:var(--font);user-select:none;
+}
+
+/* ── DESKTOP ── */
+#desktop{
+  position:fixed;inset:0;bottom:var(--dock-h);
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%,#3a000033 0%,transparent 60%),
+    radial-gradient(ellipse 60% 80% at 80% 90%,#220000 0%,transparent 60%),
+    #0a0505;
+  overflow:hidden;
+}
+/* scanlines */
+#desktop::before{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.04) 2px,rgba(0,0,0,.04) 4px);
+}
+
+/* ── DESKTOP ICONS ── */
+#desktop-icons{
+  position:absolute;inset:0;padding:16px;
+  display:flex;flex-direction:column;flex-wrap:wrap;
+  align-content:flex-start;gap:8px;z-index:1;
+}
+.desk-icon{
+  width:80px;display:flex;flex-direction:column;
+  align-items:center;gap:4px;padding:6px 4px;
+  cursor:pointer;border-radius:var(--r-sm);
+  transition:background .15s;
+}
+.desk-icon:hover{background:var(--accent4)}
+.desk-icon.selected{background:var(--accent3)}
+.desk-icon .icon-img{
+  width:52px;height:52px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;
+  background:linear-gradient(135deg,#1a0808,#2a0a0a);
+  border:1px solid var(--border);
+  box-shadow:0 4px 16px #00000066,0 0 0 1px var(--border2);
+  transition:transform .15s,box-shadow .15s;
+}
+.desk-icon:hover .icon-img{transform:scale(1.08);box-shadow:0 6px 24px #00000088,0 0 12px var(--accent3)}
+.desk-icon .icon-label{
+  font-size:11px;color:var(--text);text-align:center;
+  text-shadow:0 1px 4px #000,0 0 8px #000;
+  word-break:break-word;max-width:76px;line-height:1.2;
+}
+
+/* ── DOCK ── */
+#dock{
+  position:fixed;bottom:0;left:0;right:0;
+  height:var(--dock-h);
+  background:rgba(10,5,5,.75);
+  backdrop-filter:blur(20px);
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  gap:8px;padding:6px 16px;z-index:1000;
+}
+.dock-item{
+  position:relative;
+  width:48px;height:48px;
+  border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:26px;cursor:pointer;
+  background:linear-gradient(135deg,#1a0808,#2a0a0a);
+  border:1px solid var(--border);
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;
+  box-shadow:0 2px 8px #00000066;
+}
+.dock-item:hover{
+  transform:translateY(-8px) scale(1.15);
+  box-shadow:0 8px 24px #00000088,0 0 16px var(--accent3);
+  border-color:var(--accent2);
+}
+.dock-item.running::after{
+  content:'';position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);
+  width:4px;height:4px;border-radius:50%;background:var(--accent);
+  box-shadow:0 0 6px var(--accent);
+}
+.dock-sep{width:1px;height:36px;background:var(--border);margin:0 4px}
+.dock-item .dock-label{
+  position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);
+  background:#1a0808ee;border:1px solid var(--border);
+  padding:3px 8px;border-radius:6px;font-size:11px;color:var(--text);
+  white-space:nowrap;opacity:0;pointer-events:none;
+  transition:opacity .15s;backdrop-filter:blur(8px);
+}
+.dock-item:hover .dock-label{opacity:1}
+
+/* ── WINDOWS ── */
+.window{
+  position:absolute;
+  background:var(--panel);
+  border:1px solid var(--border2);
+  border-radius:var(--r-lg);
+  box-shadow:0 24px 64px #00000099,0 0 0 1px var(--border);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  min-width:320px;min-height:200px;
+  animation:winOpen .2s cubic-bezier(.34,1.56,.64,1);
+  transition:box-shadow .2s;
+}
+.window.focused{
+  box-shadow:0 32px 80px #000000bb,0 0 0 1px var(--border2),0 0 24px var(--accent3);
+}
+@keyframes winOpen{from{opacity:0;transform:scale(.92) translateY(8px)}to{opacity:1;transform:none}}
+.window.minimizing{animation:winMin .2s ease forwards}
+@keyframes winMin{to{opacity:0;transform:scale(.6) translateY(60px)}}
+
+/* titlebar */
+.win-titlebar{
+  height:var(--titlebar);
+  background:linear-gradient(90deg,#1f0505,#2a0808);
+  display:flex;align-items:center;
+  padding:0 12px;gap:8px;
+  cursor:move;flex-shrink:0;
+  border-bottom:1px solid var(--border);
+  border-radius:var(--r-lg) var(--r-lg) 0 0;
+}
+.win-controls{display:flex;gap:6px;align-items:center}
+.win-btn{
+  width:13px;height:13px;border-radius:50%;border:none;
+  cursor:pointer;transition:filter .15s;flex-shrink:0;
+}
+.win-btn:hover{filter:brightness(1.3)}
+.win-btn.close  {background:#ff5f57}
+.win-btn.min    {background:#febc2e}
+.win-btn.max    {background:#28c840}
+.win-title{
+  flex:1;text-align:center;font-size:13px;
+  font-family:var(--font);font-weight:600;
+  color:var(--text-dim);letter-spacing:1px;
+  pointer-events:none;
+}
+.win-body{flex:1;overflow:hidden;display:flex;flex-direction:column;border-radius:0 0 var(--r-lg) var(--r-lg)}
+.win-body iframe{width:100%;height:100%;border:none;background:var(--bg)}
+
+/* resize handle */
+.win-resize{
+  position:absolute;bottom:0;right:0;
+  width:16px;height:16px;cursor:nw-resize;
+  opacity:.4;
+}
+.win-resize::before{
+  content:'';position:absolute;bottom:4px;right:4px;
+  width:8px;height:8px;
+  border-right:2px solid var(--accent2);
+  border-bottom:2px solid var(--accent2);
+  border-radius:0 0 3px 0;
+}
+
+/* ── UAC DIALOG ── */
+#uac-overlay{
+  position:fixed;inset:0;background:#000000bb;
+  display:none;align-items:center;justify-content:center;
+  z-index:9000;backdrop-filter:blur(8px);
+}
+#uac-box{
+  background:var(--panel);border:1px solid var(--border2);
+  border-radius:var(--r-lg);padding:28px;width:380px;
+  box-shadow:0 0 60px var(--shadow);animation:winOpen .2s ease;
+}
+#uac-box h2{font-size:18px;color:var(--accent);margin-bottom:8px;letter-spacing:1px}
+#uac-box p{font-size:13px;color:var(--text-dim);line-height:1.6;margin-bottom:20px}
+.uac-btns{display:flex;gap:10px}
+.btn{
+  padding:8px 18px;border-radius:8px;border:1px solid var(--border);
+  font-family:var(--font);font-size:14px;font-weight:600;
+  cursor:pointer;transition:all .15s;letter-spacing:.5px;
+}
+.btn-primary{background:var(--accent2);color:#fff;border-color:var(--accent)}
+.btn-primary:hover{background:var(--accent);box-shadow:0 0 12px var(--accent3)}
+.btn-ghost{background:transparent;color:var(--text-dim)}
+.btn-ghost:hover{border-color:var(--accent2);color:var(--text)}
+
+/* ── CONTEXT MENU ── */
+#ctx-menu{
+  position:fixed;display:none;
+  background:#1a0808ee;border:1px solid var(--border2);
+  border-radius:10px;padding:6px;z-index:8000;
+  min-width:160px;backdrop-filter:blur(16px);
+  box-shadow:0 8px 32px #00000088;
+}
+.ctx-item{
+  padding:7px 14px;border-radius:6px;font-size:13px;
+  cursor:pointer;color:var(--text);transition:background .1s;
+  display:flex;align-items:center;gap:8px;
+}
+.ctx-item:hover{background:var(--accent4)}
+.ctx-item.danger{color:#ff6666}
+.ctx-item.danger:hover{background:#ff000018}
+.ctx-sep{height:1px;background:var(--border);margin:4px 6px}
+
+/* ── SYSTEM CRASH SCREEN ── */
+#crash-screen{
+  position:fixed;inset:0;background:#000;
+  display:none;align-items:center;justify-content:center;
+  z-index:99999;flex-direction:column;gap:16px;
+  font-family:var(--mono);
+}
+#crash-screen h1{color:#fff;font-size:32px;letter-spacing:4px}
+#crash-screen p{color:#888;font-size:14px;letter-spacing:2px;text-align:center}
+#crash-screen .crash-code{color:#ff5555;font-size:12px;margin-top:8px}
+.crash-btn{margin-top:24px;padding:10px 24px;background:#111;border:1px solid #444;
+  color:#fff;border-radius:8px;cursor:pointer;font-family:var(--mono);font-size:13px}
+.crash-btn:hover{border-color:#ff5555;color:#ff5555}
+
+/* ── NOTIFICATION ── */
+.notif{
+  position:fixed;top:16px;right:16px;z-index:7000;
+  background:#1a0808ee;border:1px solid var(--border2);
+  border-radius:10px;padding:12px 18px;
+  font-size:13px;color:var(--text);
+  box-shadow:0 8px 24px #00000088;backdrop-filter:blur(12px);
+  animation:notifIn .3s ease;pointer-events:none;
+  max-width:280px;line-height:1.5;
+}
+@keyframes notifIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--accent2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- Desktop surface -->
+<div id="desktop">
+  <div id="desktop-icons"></div>
+</div>
+
+<!-- Dock -->
+<div id="dock">
+  <div class="dock-item" data-app="Files" onclick="SD.openApp('Files')" title="">
+    <span>📁</span><div class="dock-label">Files</div>
+  </div>
+  <div class="dock-item" data-app="SoupyChat" onclick="SD.openApp('SoupyChat')" title="">
+    <span>💬</span><div class="dock-label">SoupyChat</div>
+  </div>
+  <div class="dock-item" data-app="SSearch" onclick="SD.openApp('SSearch')" title="">
+    <span>🌐</span><div class="dock-label">SSearch</div>
+  </div>
+  <div class="dock-item" data-app="SShell" onclick="SD.openApp('SShell')" title="">
+    <span>🖥️</span><div class="dock-label">SShell</div>
+  </div>
+  <div class="dock-sep"></div>
+  <div class="dock-item" data-app="ControlCenter" onclick="SD.openApp('ControlCenter')" title="">
+    <span>⚙️</span><div class="dock-label">Control Center</div>
+  </div>
+</div>
+
+<!-- UAC Dialog -->
+<div id="uac-overlay">
+  <div id="uac-box">
+    <h2>⚠ Access Control</h2>
+    <p id="uac-msg">This app is requesting permission to run.</p>
+    <div class="uac-btns">
+      <button class="btn btn-primary" onclick="SD.uacAllow()">Allow</button>
+      <button class="btn btn-ghost"   onclick="SD.uacDeny()">Deny</button>
+    </div>
+  </div>
+</div>
+
+<!-- Context Menu -->
+<div id="ctx-menu"></div>
+
+<!-- System Crash -->
+<div id="crash-screen">
+  <h1>SYSTEM ERROR</h1>
+  <p id="crash-msg">A critical system file was removed.<br>SoupyDesk cannot continue.</p>
+  <div class="crash-code" id="crash-code">ERR_SYSTEM_FILE_MISSING</div>
+  <button class="crash-btn" onclick="SD.crashRecover()">↺ Restore System Files</button>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   SOUPYDESK CORE
+════════════════════════════════════════════════════════════ */
+const SD = (() => {
+  // ── State ──────────────────────────────────────────────────
+  let windows    = {};
+  let zTop       = 100;
+  let uacQueue   = null;
+  let settings   = JSON.parse(localStorage.getItem("SD_settings") || "{}");
+  let desktopState = JSON.parse(localStorage.getItem("SD_desktop") || "{}");
+
+  const UAC_KEY  = "SD_uac";
+  const SELF_URL = location.origin;
+
+  function saveSettings() { localStorage.setItem("SD_settings", JSON.stringify(settings)); }
+  function saveDesktop()  { localStorage.setItem("SD_desktop",  JSON.stringify(desktopState)); }
+
+  // ── Filesystem API ─────────────────────────────────────────
+  const FS = {
+    async list(path="/"){ const r=await fetch(`/api/fs/list?path=${encodeURIComponent(path)}`); return r.json(); },
+    async read(path)    { const r=await fetch(`/api/fs/read?path=${encodeURIComponent(path)}`); return r.json(); },
+    async write(path,content,mime="text/plain",meta={}) {
+      return fetch("/api/fs/write",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({path,content,mime,meta})}).then(r=>r.json());
+    },
+    async mkdir(path)   { return fetch("/api/fs/mkdir",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path})}).then(r=>r.json()); },
+    async delete(path,force=false) {
+      return fetch("/api/fs/delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path,force})}).then(r=>r.json());
+    },
+    async move(src,dst) { return fetch("/api/fs/move",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({src,dst})}).then(r=>r.json()); },
+    async reset()       { return fetch("/api/fs/reset",{method:"POST"}).then(r=>r.json()); },
+    async upload(dest,file) {
+      const fd = new FormData();
+      fd.append("dest", dest);
+      fd.append("file", file);
+      return fetch("/api/fs/upload",{method:"POST",body:fd}).then(r=>r.json());
+    }
+  };
+
+  // ── Window Manager ─────────────────────────────────────────
+  function createWindow({id, title, icon="📄", width=700, height=500, x, y, url, onready}) {
+    if (windows[id]) { focusWindow(id); return; }
+
+    const W = document.getElementById("desktop").offsetWidth;
+    const H = document.getElementById("desktop").offsetHeight;
+    x = x ?? Math.max(40, Math.min(W-width-40,  60 + Object.keys(windows).length*24));
+    y = y ?? Math.max(40, Math.min(H-height-40, 40 + Object.keys(windows).length*24));
+
+    const win = document.createElement("div");
+    win.className = "window focused";
+    win.id = "win-" + id;
+    win.style.cssText = `left:${x}px;top:${y}px;width:${width}px;height:${height}px;z-index:${++zTop}`;
+    win.innerHTML = `
+      <div class="win-titlebar" id="tb-${id}">
+        <div class="win-controls">
+          <button class="win-btn close" onclick="SD.closeWindow('${id}')"></button>
+          <button class="win-btn min"   onclick="SD.minimizeWindow('${id}')"></button>
+          <button class="win-btn max"   onclick="SD.maximizeWindow('${id}')"></button>
+        </div>
+        <div class="win-title">${icon} ${title}</div>
+      </div>
+      <div class="win-body" id="body-${id}">
+        ${url ? `<iframe id="frame-${id}" src="${url}" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads" allow="autoplay; fullscreen"></iframe>` : ""}
+      </div>
+      <div class="win-resize" id="resize-${id}"></div>`;
+
+    document.getElementById("desktop").appendChild(win);
+    windows[id] = {el:win, minimized:false, url, title, icon, maximized:false,
+                   savedPos:{x,y,w:width,h:height}};
+
+    makeDraggable(win, document.getElementById("tb-" + id));
+    makeResizable(win, document.getElementById("resize-" + id));
+    win.addEventListener("mousedown", () => focusWindow(id));
+
+    updateDock();
+    if (onready) onready(win);
+    return win;
+  }
+
+  function focusWindow(id) {
+    Object.values(windows).forEach(w => w.el.classList.remove("focused"));
+    if (windows[id]) {
+      windows[id].el.classList.add("focused");
+      windows[id].el.style.zIndex = ++zTop;
+    }
+  }
+
+  function closeWindow(id) {
+    if (!windows[id]) return;
+    windows[id].el.remove();
+    delete windows[id];
+    updateDock();
+  }
+
+  function minimizeWindow(id) {
+    if (!windows[id]) return;
+    const w = windows[id];
+    w.el.classList.add("minimizing");
+    setTimeout(() => { w.el.style.display="none"; w.el.classList.remove("minimizing"); w.minimized=true; }, 200);
+    updateDock();
+  }
+
+  function maximizeWindow(id) {
+    if (!windows[id]) return;
+    const w = windows[id];
+    const desk = document.getElementById("desktop");
+    if (w.maximized) {
+      const {x,y,ww,hh} = w.savedPos;
+      w.el.style.cssText += `;left:${x}px;top:${y}px;width:${ww}px;height:${hh}px;border-radius:var(--r-lg)`;
+      w.maximized = false;
+    } else {
+      w.savedPos = {x:parseInt(w.el.style.left),y:parseInt(w.el.style.top),
+                    ww:w.el.offsetWidth,hh:w.el.offsetHeight};
+      w.el.style.cssText += `;left:0;top:0;width:${desk.offsetWidth}px;height:${desk.offsetHeight}px;border-radius:0`;
+      w.maximized = true;
+    }
+    w.el.style.zIndex = ++zTop;
+  }
+
+  function toggleWindow(id) {
+    if (!windows[id]) return false;
+    const w = windows[id];
+    if (w.minimized) {
+      w.el.style.display="flex"; w.minimized=false; focusWindow(id);
+    } else if (windows[id].el.classList.contains("focused")) {
+      minimizeWindow(id);
+    } else {
+      focusWindow(id);
+    }
+    return true;
+  }
+
+  function updateDock() {
+    document.querySelectorAll(".dock-item").forEach(el => {
+      const app = el.dataset.app;
+      const running = Object.keys(windows).some(k => k.startsWith(app));
+      el.classList.toggle("running", running);
+    });
+  }
+
+  // ── Drag & Resize ──────────────────────────────────────────
+  function makeDraggable(win, handle) {
+    let dragging=false, ox=0, oy=0;
+    handle.addEventListener("mousedown", e => {
+      if (e.target.classList.contains("win-btn")) return;
+      dragging=true; ox=e.clientX-win.offsetLeft; oy=e.clientY-win.offsetTop;
+      e.preventDefault();
+    });
+    document.addEventListener("mousemove", e => {
+      if (!dragging) return;
+      const desk = document.getElementById("desktop");
+      const x = Math.max(0, Math.min(desk.offsetWidth-60, e.clientX-ox));
+      const y = Math.max(0, Math.min(desk.offsetHeight-30, e.clientY-oy));
+      win.style.left=x+"px"; win.style.top=y+"px";
+    });
+    document.addEventListener("mouseup", () => dragging=false);
+  }
+
+  function makeResizable(win, handle) {
+    let resizing=false, sx=0, sy=0, sw=0, sh=0;
+    handle.addEventListener("mousedown", e => {
+      resizing=true; sx=e.clientX; sy=e.clientY;
+      sw=win.offsetWidth; sh=win.offsetHeight; e.preventDefault(); e.stopPropagation();
+    });
+    document.addEventListener("mousemove", e => {
+      if (!resizing) return;
+      win.style.width  = Math.max(320, sw+(e.clientX-sx))+"px";
+      win.style.height = Math.max(200, sh+(e.clientY-sy))+"px";
+    });
+    document.addEventListener("mouseup", () => resizing=false);
+  }
+
+  // ── App Launcher ───────────────────────────────────────────
+  const BUILT_IN_APPS = {
+    Files:         { title:"Files",         icon:"📁", url:"/app/Files",         w:800,  h:520 },
+    SoupyChat:     { title:"SoupyChat",     icon:"💬", url:"https://soupychat.onrender.com", w:780, h:600 },
+    SSearch:       { title:"SSearch",       icon:"🌐", url:"/app/SSearch",       w:900,  h:600 },
+    SShell:        { title:"SShell",        icon:"🖥️", url:"/app/SShell",        w:700,  h:440 },
+    ControlCenter: { title:"Control Center",icon:"⚙️", url:"/app/ControlCenter", w:560,  h:480 },
+  };
+
+  function openApp(appName, extraOpts={}) {
+    const cfg = BUILT_IN_APPS[appName];
+    if (!cfg) { notify("App not found: " + appName); return; }
+    const id = appName + "_" + Date.now();
+
+    if (!toggleWindow(appName)) {
+      createWindow({
+        id: appName,
+        title: cfg.title, icon: cfg.icon,
+        width: cfg.w, height: cfg.h,
+        url: cfg.url,
+        ...extraOpts
+      });
+    }
+  }
+
+  function openHTMLFile(path, name) {
+    const uac = localStorage.getItem(UAC_KEY) !== "0";
+    if (uac) {
+      showUAC(`"${name}" wants to run as an application.`, () => _openHTMLFile(path, name));
+    } else {
+      _openHTMLFile(path, name);
+    }
+  }
+
+  async function _openHTMLFile(path, name) {
+    const data = await FS.read(path);
+    if (data.error) { notify("Cannot open file: " + data.error); return; }
+    let src;
+    if (data.mime === "text/html") {
+      const blob = new Blob([atob(data.content)], {type:"text/html"});
+      src = URL.createObjectURL(blob);
+    } else {
+      src = "data:" + data.mime + ";base64," + data.content;
+    }
+    createWindow({id:"file_"+Date.now(), title:name, icon:"📄", width:800, height:560, url:src});
+  }
+
+  // ── UAC ────────────────────────────────────────────────────
+  function showUAC(msg, onAllow) {
+    document.getElementById("uac-msg").textContent = msg;
+    document.getElementById("uac-overlay").style.display = "flex";
+    uacQueue = onAllow;
+  }
+  function uacAllow() {
+    document.getElementById("uac-overlay").style.display = "none";
+    if (uacQueue) { uacQueue(); uacQueue=null; }
+  }
+  function uacDeny() {
+    document.getElementById("uac-overlay").style.display = "none";
+    uacQueue = null;
+    notify("Action denied by UAC.");
+  }
+
+  // ── System Crash ───────────────────────────────────────────
+  function crash(msg, code) {
+    const cs = document.getElementById("crash-screen");
+    document.getElementById("crash-msg").textContent = msg || "A critical system file was removed.";
+    document.getElementById("crash-code").textContent = code || "ERR_SYSTEM_FILE_MISSING";
+    cs.style.display = "flex";
+  }
+  async function crashRecover() {
+    await FS.reset();
+    document.getElementById("crash-screen").style.display = "none";
+    notify("System files restored. Please refresh.");
+    setTimeout(() => location.reload(), 1500);
+  }
+
+  // ── Notifications ──────────────────────────────────────────
+  function notify(msg, duration=3000) {
+    const n = document.createElement("div");
+    n.className = "notif";
+    n.textContent = msg;
+    document.body.appendChild(n);
+    setTimeout(() => {
+      n.style.opacity="0"; n.style.transform="translateX(20px)";
+      n.style.transition="all .3s";
+      setTimeout(() => n.remove(), 300);
+    }, duration);
+  }
+
+  // ── Context Menu ───────────────────────────────────────────
+  function showCtxMenu(x, y, items) {
+    const menu = document.getElementById("ctx-menu");
+    menu.innerHTML = items.map(item => {
+      if (item === "sep") return '<div class="ctx-sep"></div>';
+      return `<div class="ctx-item ${item.danger?"danger":""}" onclick="(${item.action})();document.getElementById('ctx-menu').style.display='none'">${item.icon||""} ${item.label}</div>`;
+    }).join("");
+    const W = window.innerWidth, H = window.innerHeight;
+    menu.style.display = "block";
+    const mw = menu.offsetWidth, mh = menu.offsetHeight;
+    menu.style.left = Math.min(x, W-mw-8) + "px";
+    menu.style.top  = Math.min(y, H-mh-8) + "px";
+  }
+  function hideCtxMenu() { document.getElementById("ctx-menu").style.display="none"; }
+
+  // ── Desktop Icons ──────────────────────────────────────────
+  const ICON_MAP = {
+    "folder":"📁","folder-music":"🎵","folder-doc":"📄","folder-system":"⚙️",
+    "folder-main":"🔧","folder-3p":"📦","app":"⚡","file-html":"🌐",
+    "file-audio":"🎵","file-image":"🖼️","file":"📄"
+  };
+
+  function iconFor(item) {
+    if (item.type==="app") return "⚡";
+    if (item.type==="dir") return ICON_MAP[item.icon] || "📁";
+    const name = item.name.toLowerCase();
+    if (name.endsWith(".html") || name.endsWith(".htm")) return "🌐";
+    if (name.match(/\.(mp3|wav|ogg|flac)$/)) return "🎵";
+    if (name.match(/\.(png|jpg|jpeg|gif|webp|svg)$/)) return "🖼️";
+    return "📄";
+  }
+
+  async function renderDesktop() {
+    const data = await FS.list("/Desktop");
+    const container = document.getElementById("desktop-icons");
+    container.innerHTML = "";
+    if (data.items) {
+      data.items.forEach(item => {
+        const el = document.createElement("div");
+        el.className = "desk-icon";
+        el.innerHTML = `<div class="icon-img">${iconFor(item)}</div><div class="icon-label">${item.name}</div>`;
+        el.ondblclick = () => {
+          if (item.type==="dir") openApp("Files", {extraPath:"/Desktop/"+item.name});
+          else if (item.type==="app") openApp(item.name.replace(".app",""));
+          else if (item.name.endsWith(".html")) openHTMLFile("/Desktop/"+item.name, item.name);
+          else notify("Cannot open: " + item.name);
+        };
+        el.oncontextmenu = e => {
+          e.preventDefault();
+          showCtxMenu(e.clientX, e.clientY, [
+            {label:"Open", icon:"📂", action:`function(){SD.desktopOpen('${item.name}')}`},
+            "sep",
+            {label:"Delete", icon:"🗑️", danger:true, action:`function(){SD.desktopDelete('${item.name}', ${item.protected})}`}
+          ]);
+        };
+        container.appendChild(el);
+      });
+    }
+  }
+
+  function desktopOpen(name) {
+    hideCtxMenu();
+    const path = "/Desktop/" + name;
+    if (name.endsWith(".html")) openHTMLFile(path, name);
+    else openApp("Files");
+  }
+
+  async function desktopDelete(name, prot) {
+    hideCtxMenu();
+    if (prot) { notify("Protected file."); return; }
+    await FS.delete("/Desktop/" + name);
+    renderDesktop();
+  }
+
+  // ── Desktop Drop Zone ──────────────────────────────────────
+  function initDropZone() {
+    const desk = document.getElementById("desktop");
+    desk.addEventListener("dragover", e => { e.preventDefault(); e.dataTransfer.dropEffect="copy"; });
+    desk.addEventListener("drop", async e => {
+      e.preventDefault();
+      const files = [...e.dataTransfer.files];
+      for (const f of files) {
+        await FS.upload("/Desktop", f);
+        notify(`"${f.name}" added to Desktop`);
+      }
+      renderDesktop();
+    });
+  }
+
+  // ── Desktop Right Click ────────────────────────────────────
+  function initDesktopCtx() {
+    document.getElementById("desktop").addEventListener("contextmenu", e => {
+      if (e.target.closest(".desk-icon")) return;
+      e.preventDefault();
+      showCtxMenu(e.clientX, e.clientY, [
+        {label:"New Folder", icon:"📁", action:"function(){SD.newDesktopFolder()}"},
+        {label:"Refresh",    icon:"🔄", action:"function(){SD.renderDesktop()}"},
+        "sep",
+        {label:"Open Files",         icon:"📁", action:"function(){SD.openApp('Files')}"},
+        {label:"Open SSearch",       icon:"🌐", action:"function(){SD.openApp('SSearch')}"},
+        {label:"Open SShell",        icon:"🖥️", action:"function(){SD.openApp('SShell')}"},
+        {label:"Open Control Center",icon:"⚙️", action:"function(){SD.openApp('ControlCenter')}"},
+      ]);
+    });
+  }
+
+  async function newDesktopFolder() {
+    const name = prompt("Folder name:");
+    if (!name) return;
+    await FS.mkdir("/Desktop/" + name);
+    renderDesktop();
+    notify("Folder created.");
+  }
+
+  // ── Inter-frame messaging ──────────────────────────────────
+  // Apps can postMessage to communicate with the desktop
+  window.addEventListener("message", async e => {
+    const d = e.data;
+    if (!d || !d.SD) return;
+    switch(d.action) {
+      case "notify":      notify(d.msg); break;
+      case "openApp":     openApp(d.app); break;
+      case "openFile":    openHTMLFile(d.path, d.name); break;
+      case "crash":       crash(d.msg, d.code); break;
+      case "refreshDesk": renderDesktop(); break;
+      case "getUAC":      e.source.postMessage({SD:true,action:"uacVal",val:localStorage.getItem(UAC_KEY)||"1"},e.origin); break;
+      case "setUAC":      localStorage.setItem(UAC_KEY, d.val); notify("UAC set to " + d.val); break;
+      case "getSetting":  e.source.postMessage({SD:true,action:"setting",key:d.key,val:settings[d.key]||null},e.origin); break;
+      case "setSetting":  settings[d.key]=d.val; saveSettings(); break;
+      case "fsOp":
+        const result = await FS[d.op](...(d.args||[]));
+        e.source.postMessage({SD:true,action:"fsResult",reqId:d.reqId,result},e.origin||"*");
+        break;
+    }
+  });
+
+  // ── Init ───────────────────────────────────────────────────
+  function init() {
+    initDropZone();
+    initDesktopCtx();
+    renderDesktop();
+    document.addEventListener("click", hideCtxMenu);
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape") hideCtxMenu();
+    });
+  }
+
+  return {
+    // Public API
+    openApp, closeWindow, minimizeWindow, maximizeWindow,
+    uacAllow, uacDeny, notify, crash, crashRecover,
+    showCtxMenu, hideCtxMenu, renderDesktop,
+    desktopOpen, desktopDelete, newDesktopFolder,
+    openHTMLFile, FS, createWindow,
+    getSettings: () => settings,
+    setSetting: (k,v) => { settings[k]=v; saveSettings(); },
+    init
+  };
+})();
+
+// Boot
+window.addEventListener("DOMContentLoaded", () => SD.init());
+</script>
+</body>
+</html>
