@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+:root{--bg:#0a0505;--bg2:#110808;--bg3:#1a0a0a;--accent:#ff1a1a;--accent2:#cc0000;--accent3:#ff1a1a44;--accent4:#ff1a1a18;--text:#ffcccc;--text-dim:#aa6666;--border:#ff1a1a33;--border2:#ff1a1a66;--r:10px;--font:'Rajdhani',sans-serif;--mono:'Share Tech Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);overflow:hidden}
+#files{height:100%;display:flex;flex-direction:column}
+
+/* topbar */
+#files-toolbar{
+  display:flex;align-items:center;gap:8px;padding:8px 14px;
+  background:var(--bg3);border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.f-btn{
+  padding:5px 12px;background:var(--bg2);border:1px solid var(--border);
+  border-radius:8px;color:var(--text-dim);font-size:13px;cursor:pointer;
+  font-family:var(--font);font-weight:600;letter-spacing:.5px;transition:all .15s;
+}
+.f-btn:hover{border-color:var(--accent2);color:var(--text)}
+#path-bar{
+  flex:1;background:var(--bg2);border:1px solid var(--border);
+  padding:5px 12px;border-radius:8px;font-family:var(--mono);font-size:12px;
+  color:var(--text-dim);
+}
+#search-bar{
+  background:var(--bg2);border:1px solid var(--border);border-radius:8px;
+  padding:5px 12px;font-family:var(--mono);font-size:12px;color:var(--text);
+  outline:none;width:160px;
+}
+#search-bar:focus{border-color:var(--accent)}
+#search-bar::placeholder{color:var(--text-dim)}
+
+/* main area */
+#files-main{flex:1;display:flex;overflow:hidden}
+
+/* sidebar */
+#sidebar{
+  width:160px;flex-shrink:0;border-right:1px solid var(--border);
+  padding:10px 8px;display:flex;flex-direction:column;gap:2px;
+  background:var(--bg2);overflow-y:auto;
+}
+.side-item{
+  padding:7px 10px;border-radius:8px;font-size:13px;cursor:pointer;
+  color:var(--text-dim);transition:all .15s;display:flex;align-items:center;gap:8px;
+}
+.side-item:hover{background:var(--accent4);color:var(--text)}
+.side-item.active{background:var(--accent4);color:var(--accent);border:1px solid var(--accent3)}
+.side-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;padding:8px 10px 4px;font-weight:700}
+
+/* file grid */
+#file-grid{
+  flex:1;padding:16px;overflow-y:auto;
+  display:flex;flex-wrap:wrap;align-content:flex-start;gap:8px;
+  scrollbar-width:thin;scrollbar-color:var(--accent2) var(--bg2);
+}
+#file-grid::-webkit-scrollbar{width:4px}
+#file-grid::-webkit-scrollbar-thumb{background:var(--accent2);border-radius:2px}
+
+.file-item{
+  width:88px;display:flex;flex-direction:column;align-items:center;
+  gap:5px;padding:8px 4px;border-radius:10px;cursor:pointer;
+  transition:background .15s;border:1px solid transparent;
+}
+.file-item:hover{background:var(--accent4);border-color:var(--border)}
+.file-item.selected{background:var(--accent4);border-color:var(--accent3)}
+.file-icon{font-size:36px;line-height:1}
+.file-name{font-size:11px;text-align:center;color:var(--text);word-break:break-word;line-height:1.3;max-width:84px}
+.file-item.protected .file-icon::after{content:'🔒';font-size:12px;vertical-align:super}
+
+/* status bar */
+#status-bar{
+  padding:5px 14px;background:var(--bg3);border-top:1px solid var(--border);
+  font-size:11px;color:var(--text-dim);font-family:var(--mono);flex-shrink:0;
+  display:flex;justify-content:space-between;
+}
+
+/* context menu */
+#file-ctx{
+  position:fixed;display:none;
+  background:#1a0808ee;border:1px solid var(--border2);
+  border-radius:10px;padding:6px;z-index:8000;min-width:160px;
+  backdrop-filter:blur(16px);box-shadow:0 8px 32px #00000088;
+}
+.ctx-item{padding:7px 14px;border-radius:6px;font-size:13px;cursor:pointer;
+  color:var(--text);transition:background .1s;display:flex;align-items:center;gap:8px}
+.ctx-item:hover{background:var(--accent4)}
+.ctx-item.danger{color:#ff6666}
+.ctx-item.danger:hover{background:#ff000018}
+.ctx-sep{height:1px;background:var(--border);margin:4px 6px}
+
+/* drop zone highlight */
+#file-grid.dragover{background:var(--accent4);border:2px dashed var(--accent2)}
+
+/* empty state */
+.empty-state{width:100%;text-align:center;padding:60px 20px;color:var(--text-dim);font-size:14px}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+<div id="files">
+  <div id="files-toolbar">
+    <button class="f-btn" onclick="Files.back()">←</button>
+    <button class="f-btn" onclick="Files.up()">↑</button>
+    <div id="path-bar">/</div>
+    <input id="search-bar" placeholder="Search..." oninput="Files.search(this.value)">
+    <button class="f-btn" onclick="Files.newFolder()">+ Folder</button>
+    <button class="f-btn" onclick="Files.refresh()">↺</button>
+  </div>
+  <div id="files-main">
+    <div id="sidebar">
+      <div class="side-label">Favorites</div>
+      <div class="side-item active" onclick="Files.navigate('/')">🏠 Home</div>
+      <div class="side-item" onclick="Files.navigate('/Desktop')">🖥️ Desktop</div>
+      <div class="side-item" onclick="Files.navigate('/Downloads')">⬇ Downloads</div>
+      <div class="side-item" onclick="Files.navigate('/Documents')">📄 Documents</div>
+      <div class="side-item" onclick="Files.navigate('/Music')">🎵 Music</div>
+      <div class="side-label">System</div>
+      <div class="side-item" onclick="Files.navigate('/System')">⚙️ System</div>
+      <div class="side-item" onclick="Files.navigate('/System/Main')">🔧 Main</div>
+      <div class="side-item" onclick="Files.navigate('/System/ThirdParty')">📦 ThirdParty</div>
+    </div>
+    <div id="file-grid" ondragover="Files.onDragOver(event)" ondrop="Files.onDrop(event)" ondragleave="Files.onDragLeave()">
+      <div class="empty-state">Loading...</div>
+    </div>
+  </div>
+  <div id="status-bar">
+    <span id="status-left">Ready</span>
+    <span id="status-right"></span>
+  </div>
+</div>
+
+<div id="file-ctx"></div>
+
+<script>
+// ── FS Bridge ──────────────────────────────────────────────
+let fsCallbacks = {};
+let fsReqId = 0;
+function fsOp(op, ...args) {
+  return new Promise(resolve => {
+    const id = "fs_" + (++fsReqId);
+    fsCallbacks[id] = resolve;
+    parent.postMessage({SD:true, action:"fsOp", op, args, reqId:id}, "*");
+  });
+}
+let ctx = null;
+window.addEventListener("message", e => {
+  if (!e.data?.SD) return;
+  if (e.data.action === "context") {
+    ctx = e.data;
+    // Start in user home desktop
+    navigate(ctx.userHome);
+    // Update sidebar with user paths
+    const sl = document.getElementById("sidebar");
+    if (sl) {
+      sl.innerHTML = `
+        <div class="side-label">User</div>
+        <div class="side-item active" onclick="Files.navigate(ctx.userHome)">🏠 Home</div>
+        <div class="side-item" onclick="Files.navigate(ctx.userHome+'/Desktop')">🖥️ Desktop</div>
+        <div class="side-item" onclick="Files.navigate(ctx.userHome+'/Downloads')">⬇ Downloads</div>
+        <div class="side-item" onclick="Files.navigate(ctx.userHome+'/Documents')">📄 Documents</div>
+        <div class="side-item" onclick="Files.navigate(ctx.userHome+'/Music')">🎵 Music</div>
+        <div class="side-label">System</div>
+        <div class="side-item" onclick="Files.navigate('/System')">⚙️ System</div>
+        <div class="side-item" onclick="Files.navigate('/System/Main')">🔧 Main</div>
+        <div class="side-item" onclick="Files.navigate('/System/Main/SystemApps')">⚡ SystemApps</div>
+        <div class="side-item" onclick="Files.navigate('/System/Users')">👥 Users</div>
+        <div class="side-item" onclick="Files.navigate('/System/Main/ThirdParty')">📦 ThirdParty</div>
+      `;
+    }
+  }
+  if (e.data.action === "fsResult" && fsCallbacks[e.data.reqId]) {
+    fsCallbacks[e.data.reqId](e.data.result);
+    delete fsCallbacks[e.data.reqId];
+  }
+});
+
+const ICON_MAP = {
+  "folder":"📁","folder-music":"🎵","folder-doc":"📄","folder-system":"⚙️",
+  "folder-main":"🔧","folder-3p":"📦","app":"⚡"
+};
+
+function iconFor(item) {
+  if (item.type==="app") return "⚡";
+  if (item.type==="dir") return ICON_MAP[item.icon]||"📁";
+  const n = item.name.toLowerCase();
+  if (n.endsWith(".html")||n.endsWith(".htm")) return "🌐";
+  if (n.match(/\.(mp3|wav|ogg|flac|aac)$/)) return "🎵";
+  if (n.match(/\.(png|jpg|jpeg|gif|webp|svg|bmp)$/)) return "🖼️";
+  if (n.match(/\.(pdf)$/)) return "📕";
+  if (n.match(/\.(txt|md)$/)) return "📝";
+  if (n.match(/\.(zip|rar|7z|tar|gz)$/)) return "🗜️";
+  return "📄";
+}
+
+const Files = (() => {
+  let cwd      = "/";
+  let history  = ["/"];
+  let histIdx  = 0;
+  let items    = [];
+  let selected = null;
+
+  function setStatus(left, right="") {
+    document.getElementById("status-left").textContent  = left;
+    document.getElementById("status-right").textContent = right;
+  }
+
+  async function navigate(path) {
+    cwd = path;
+    document.getElementById("path-bar").textContent = cwd;
+    // Update sidebar active
+    document.querySelectorAll(".side-item").forEach(el => {
+      el.classList.toggle("active", el.textContent.trim().includes(cwd.split("/").pop() || "Home"));
+    });
+    await refresh();
+    if (history[histIdx] !== path) {
+      history = history.slice(0, histIdx+1);
+      history.push(path);
+      histIdx = history.length-1;
+    }
+  }
+
+  async function refresh() {
+    const grid = document.getElementById("file-grid");
+    grid.innerHTML = "";
+    const data = await fsOp("list", cwd);
+    if (data.error) { grid.innerHTML = `<div class="empty-state">Error: ${data.error}</div>`; return; }
+    items = data.items || [];
+    if (items.length === 0) {
+      grid.innerHTML = '<div class="empty-state">📂 This folder is empty<br><span style="font-size:12px;margin-top:8px;display:block">Drag & drop files here</span></div>';
+    } else {
+      items.forEach(renderItem);
+    }
+    setStatus(`${items.length} item${items.length!==1?"s":""}`, cwd);
+  }
+
+  function renderItem(item) {
+    const grid = document.getElementById("file-grid");
+    const el = document.createElement("div");
+    el.className = "file-item" + (item.protected?" protected":"");
+    el.dataset.name = item.name;
+    el.dataset.type = item.type;
+    el.draggable = true;
+    el.innerHTML = `<div class="file-icon">${iconFor(item)}</div><div class="file-name">${item.name}</div>`;
+    el.onclick = () => { selected=item.name; document.querySelectorAll(".file-item").forEach(e=>e.classList.remove("selected")); el.classList.add("selected"); };
+    el.ondblclick = () => openItem(item);
+    el.oncontextmenu = e => { e.preventDefault(); selected=item.name; showCtx(e.clientX, e.clientY, item); };
+    el.ondragstart = e => { e.dataTransfer.setData("text/plain", cwd+"/"+item.name); };
+    grid.appendChild(el);
+  }
+
+  function openItem(item) {
+    // Check if opening another user's folder
+    const targetPath = cwd === "/" ? "/"+item.name : cwd+"/"+item.name;
+    if (item.type==="dir" && cwd === "/System/Users" && item.name !== ctx?.username) {
+      parent.postMessage({SD:true,action:"passPrompt",username:item.name},"*");
+      window.addEventListener("message",function handler(ev){
+        if(ev.data?.SD && ev.data.action==="passOk"){
+          window.removeEventListener("message",handler);
+          navigate(targetPath);
+        }
+      });
+      return;
+    }
+    if (item.type==="dir") {
+      navigate(targetPath);
+    } else if (item.type==="app") {
+      const appName = item.name.replace(".app","");
+      parent.postMessage({SD:true, action:"openApp", app:appName}, "*");
+    } else if (item.name.endsWith(".html")||item.name.endsWith(".htm")) {
+      const path = (cwd==="/"?"/":cwd) + "/" + item.name;
+      parent.postMessage({SD:true, action:"openFile", path, name:item.name}, "*");
+    } else {
+      parent.postMessage({SD:true, action:"notify", msg:`Cannot open: ${item.name}`}, "*");
+    }
+  }
+
+  function showCtx(x, y, item) {
+    const ctx = document.getElementById("file-ctx");
+    const items = [
+      {label:"Open", icon:"📂", action:() => openItem(item)},
+      "sep",
+      {label:"Rename", icon:"✏️", action:() => renameItem(item)},
+    ];
+    if (!item.protected) {
+      items.push({label:"Delete", icon:"🗑️", danger:true, action:() => deleteItem(item, false)});
+    } else {
+      items.push({label:"Force Delete 🔒", icon:"🗑️", danger:true, action:() => {
+        if (confirm(`⚠ WARNING: "${item.name}" is a SYSTEM FILE.\n\nDeleting it may cause SoupyDesk to malfunction.\n\nAre you ABSOLUTELY sure?`)) {
+          deleteItem(item, true);
+        }
+      }});
+    }
+    ctx.innerHTML = items.map(i => {
+      if (i==="sep") return '<div class="ctx-sep"></div>';
+      return `<div class="ctx-item ${i.danger?"danger":""}" onclick="ctxActions['${i.label}']()">${i.icon} ${i.label}</div>`;
+    }).join("");
+    window.ctxActions = {};
+    items.filter(i=>i!=="sep").forEach(i => { window.ctxActions[i.label]=i.action; });
+    const W=window.innerWidth, H=window.innerHeight;
+    ctx.style.display="block";
+    ctx.style.left = Math.min(x,W-170)+"px";
+    ctx.style.top  = Math.min(y,H-200)+"px";
+  }
+
+  async function deleteItem(item, force) {
+    const path = (cwd==="/"?"/":cwd)+"/"+item.name;
+    const result = await fsOp("delete", path, force);
+    if (result.error==="protected") {
+      alert("Protected system file! Right-click → Force Delete to remove.");
+    } else if (result.error) {
+      alert("Error: "+result.error);
+    } else {
+      // Check if it was a critical system file
+      const criticalFiles = ["SShell.app","SoupyChat.app","SSearch.app","Files.app","ControlCenter.app"];
+      if (item.protected && criticalFiles.includes(item.name)) {
+        parent.postMessage({SD:true,action:"crash",
+          msg:`Critical system file "${item.name}" was removed.\nSoupyDesk cannot continue normally.`,
+          code:"ERR_"+item.name.replace(/\./g,"_").toUpperCase()+"_MISSING"},"*");
+        return;
+      }
+      refresh();
+      parent.postMessage({SD:true,action:"refreshDesk"},"*");
+    }
+    hideCtx();
+  }
+
+  async function renameItem(item) {
+    hideCtx();
+    const newName = prompt("Rename to:", item.name);
+    if (!newName || newName===item.name) return;
+    const src = (cwd==="/"?"/":cwd)+"/"+item.name;
+    const dst = (cwd==="/"?"/":cwd)+"/"+newName;
+    await fsOp("move", src, dst);
+    refresh();
+  }
+
+  function hideCtx() { document.getElementById("file-ctx").style.display="none"; }
+
+  async function newFolder() {
+    const name = prompt("Folder name:");
+    if (!name) return;
+    await fsOp("mkdir", (cwd==="/"?"/":cwd)+"/"+name);
+    refresh();
+  }
+
+  function back() {
+    if (histIdx>0) { histIdx--; navigate(history[histIdx]); }
+  }
+
+  function up() {
+    const parts = cwd.split("/").filter(Boolean);
+    if (parts.length===0) return;
+    parts.pop();
+    navigate("/"+parts.join("/") || "/");
+  }
+
+  function search(q) {
+    if (!q) { refresh(); return; }
+    const grid = document.getElementById("file-grid");
+    grid.innerHTML="";
+    items.filter(i=>i.name.toLowerCase().includes(q.toLowerCase())).forEach(renderItem);
+  }
+
+  function onDragOver(e) { e.preventDefault(); document.getElementById("file-grid").classList.add("dragover"); }
+  function onDragLeave() { document.getElementById("file-grid").classList.remove("dragover"); }
+  async function onDrop(e) {
+    e.preventDefault();
+    document.getElementById("file-grid").classList.remove("dragover");
+    // Files dropped from OS
+    const files = [...e.dataTransfer.files];
+    for (const f of files) {
+      const fd = new FormData();
+      fd.append("dest", cwd || (ctx?.userHome+"/Desktop") || "/");
+      fd.append("file", f);
+      await fetch("/api/fs/upload", {method:"POST", headers:{"X-SD-Token":ctx?.token||""}, body:fd});
+    }
+    // Internal move
+    const src = e.dataTransfer.getData("text/plain");
+    if (src && !files.length) {
+      const name = src.split("/").pop();
+      await fsOp("move", src, cwd+"/"+name);
+    }
+    refresh();
+    parent.postMessage({SD:true,action:"refreshDesk"},"*");
+  }
+
+  document.addEventListener("click", hideCtx);
+  // Get context from desktop
+  parent.postMessage({SD:true,action:"getContext"},"*");
+
+  return {navigate, refresh, back, up, newFolder, search, onDragOver, onDragLeave, onDrop};
+})();
+</script>
+</body>
+</html>
