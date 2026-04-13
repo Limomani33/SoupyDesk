@@ -1,0 +1,74 @@
+{
+  "__type": "dir",
+  "__meta": {
+    "icon": "folder-user",
+    "protected": false
+  },
+  "Desktop": {
+    "__type": "dir",
+    "__meta": {
+      "icon": "folder",
+      "protected": false
+    }
+  },
+  "Documents": {
+    "__type": "dir",
+    "__meta": {
+      "icon": "folder-doc",
+      "protected": false
+    }
+  },
+  "Downloads": {
+    "__type": "dir",
+    "__meta": {
+      "icon": "folder-dl",
+      "protected": false
+    }
+  },
+  "Music": {
+    "__type": "dir",
+    "__meta": {
+      "icon": "folder-music",
+      "protected": false
+    }
+  },
+  "USRCONFIG": {
+    "__type": "dir",
+    "__meta": {
+      "icon": "folder-cfg",
+      "protected": false
+    },
+    "UserInfo.json": {
+      "__type": "file",
+      "__content": "eyJ1c2VybmFtZSI6ICJqeXR5anlydCIsICJjcmVhdGVkIjogIjIwMjYtMDQtMTNUMTg6NTE6MDRaIn0=",
+      "__mime": "application/json",
+      "__meta": {}
+    },
+    "auth.json": {
+      "__type": "file",
+      "__content": "eyJ1c2VybmFtZSI6ICJqeXR5anlydCIsICJwd19oYXNoIjogIjM4ODA0MjIyZGI1N2Q3MDUxNzU2MDRjZGY2ZGJmNzg2MzNhOTdlYTkwNzViMzFiYWE4ODRhMjhjNjVlYTZlZDYifQ==",
+      "__mime": "application/json",
+      "__meta": {
+        "hidden": true
+      }
+    }
+  },
+  "Settings.SDConfig": {
+    "__type": "file",
+    "__content": "ewogICJ0aGVtZSI6ICJzb2FweWNvcmUyIiwKICAid2FsbHBhcGVyIjogbnVsbCwKICAiY3Vyc29yIjogImRlZmF1bHQiLAogICJjdXN0b21DdXJzb3IiOiBudWxsLAogICJpY29uX2ZvbGRlciI6IG51bGwsCiAgImljb25faHRtbCI6IG51bGwsCiAgImljb25fZXJyb3IiOiBudWxsLAogICJkb2NrX3Bvc2l0aW9uIjogImJvdHRvbSIsCiAgInNob3dfY2xvY2siOiB0cnVlLAogICJzaG93X2JhdHRlcnkiOiBmYWxzZSwKICAiYW5pbWF0aW9ucyI6IHRydWUsCiAgImZvbnRfc2l6ZSI6ICJtZWRpdW0iLAogICJsYW5ndWFnZSI6ICJlbiIsCiAgInRpbWV6b25lIjogImF1dG8iLAogICJzdGFydF9tZW51X3N0eWxlIjogImdyaWQiCn0=",
+    "__mime": "application/json",
+    "__meta": {}
+  },
+  "PinnedApps.SDConfig": {
+    "__type": "file",
+    "__content": "WwogIHsKICAgICJuYW1lIjogIkZpbGVzIiwKICAgICJpY29uIjogIlx1ZDgzZFx1ZGNjMSIsCiAgICAidHlwZSI6ICJhcHAiCiAgfSwKICB7CiAgICAibmFtZSI6ICJTb3VweUNoYXQiLAogICAgImljb24iOiAiXHVkODNkXHVkY2FjIiwKICAgICJ0eXBlIjogImFwcCIKICB9LAogIHsKICAgICJuYW1lIjogIlNTZWFyY2giLAogICAgImljb24iOiAiXHVkODNjXHVkZjEwIiwKICAgICJ0eXBlIjogImFwcCIKICB9LAogIHsKICAgICJuYW1lIjogIlNTaGVsbCIsCiAgICAiaWNvbiI6ICJcdWQ4M2RcdWRkYTVcdWZlMGYiLAogICAgInR5cGUiOiAiYXBwIgogIH0sCiAgewogICAgIm5hbWUiOiAiQ29udHJvbENlbnRlciIsCiAgICAiaWNvbiI6ICJcdTI2OTlcdWZlMGYiLAogICAgInR5cGUiOiAiYXBwIgogIH0KXQ==",
+    "__mime": "application/json",
+    "__meta": {}
+  },
+  "Values.SDVC": {
+    "__type": "file",
+    "__content": "ewogICJTeXN0ZW0uTWF4UmVjZW50RmlsZXMiOiAxMCwKICAiU3lzdGVtLkFuaW1hdGlvblNwZWVkIjogMS4wLAogICJEZXNrdG9wLkdyaWRTaXplIjogODgsCiAgIlNoZWxsLkhpc3RvcnlTaXplIjogMTAwLAogICJTZWFyY2guRGVmYXVsdEVuZ2luZSI6ICJnb29nbGUiLAogICJXaW5kb3cuRGVmYXVsdFdpZHRoIjogNzAwLAogICJXaW5kb3cuRGVmYXVsdEhlaWdodCI6IDUwMCwKICAiVXNlci5EaXNwbGF5TmFtZSI6ICJqeXR5anlydCIKfQ==",
+    "__mime": "application/json",
+    "__meta": {}
+  }
+}
